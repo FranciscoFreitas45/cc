@@ -1,5 +1,3 @@
-// Java program to illustrate Client side
-// Implementation using DatagramSocket
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -110,11 +108,11 @@ public class Cliente {
            // String enderecoIP = teclado.nextLine();
             System.out.println("1-Download");
             System.out.println("2-Upload");
-            System.out.print("Digite o diretorio do arquivo a ser enviado. (Ex: C:/Users/Diego/Documents/): ");
-            String diretorio = teclado.nextLine();
+            System.out.print("Digite a diretoria do arquivo a ser enviado. (Ex: C:/Users/Diego/Documents/): ");
+            String diretoria = teclado.nextLine();
             System.out.print("Digite o nome do arquivo a ser enviado: (Ex: letra.txt): ");
             String nome = teclado.nextLine();
-            Cliente cliente = new Cliente(diretorio+nome,false,8010,8011);
+            Cliente cliente = new Cliente(diretoria+nome,false,8010,8011);
             cliente.run();
         }
     }

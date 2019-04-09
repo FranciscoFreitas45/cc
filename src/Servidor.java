@@ -1,10 +1,3 @@
-
-/**
- *
- * @authors Catarina Ribeiro, Leonardo Cavalcante, Leonardo Portugal, Victor
- * Meireles
- *
- */
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -94,11 +87,11 @@ public class Servidor {
     public static void main(String[] args) {
         Scanner teclado = new Scanner(System.in);
         System.out.println("----------------------------------------------SERVIDOR----------------------------------------------");
-        System.out.print("Digite o diretorio do arquivo a ser criado. (Ex: C:/Users/Diego/Documents/): ");
-        String diretorio = teclado.nextLine();
+        System.out.print("Digite a diretoria do arquivo a ser criado. (Ex: C:/Users/Diego/Documents/): ");
+        String diretoria = teclado.nextLine();
         System.out.print("Digite o nome do arquivo a ser criado: (Ex: letra.txt): ");
         String nome = teclado.nextLine();
 
-        Servidor servidor = new Servidor(8010,8011,diretorio + nome);
+        Servidor servidor = new Servidor(8010,8011,diretoria + nome);
     }
 }
