@@ -1,118 +1,76 @@
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.awt.*;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.*;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Scanner;
-import java.util.List;
+
+import static java.lang.Integer.parseInt;
 
 public class Cliente {
-    static final int CABECALHO = 4;
-    static final int TAMANHO_PACOTE = 512;
-    private String caminho;
-    private boolean transferenciaCompleta;
-    private DatagramSocket saida;
-    private DatagramSocket entrada;
-    private int portaEntrada;
-    private int portaSaida;
-    private InetAddress enderecoIP;
-    private  int numPacote;
-    List<byte[]> listaPacotes;
-
-    public Cliente(String caminho, boolean transferenciaCompleta,int portaEntrada, int portaSaida) throws UnknownHostException {
-        this.caminho = caminho;
-        this.transferenciaCompleta = transferenciaCompleta;
-        this.portaEntrada = portaEntrada;
-        this.portaSaida = portaSaida;
-        this.enderecoIP=InetAddress.getLocalHost();
-        this.numPacote=1;
+    public static void main(String[] args) {
         try {
-            this.saida = new DatagramSocket();
-            this.entrada= new DatagramSocket(4321);
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
+            int portaEntrada, portaDestino, tipo;
+            BufferedReader sin = new BufferedReader(new InputStreamReader(System.in));
+            System.out.print("Qual é a porta de entrada: ");
 
-    }
+            portaEntrada = parseInt(sin.readLine());
+            Conexoes conexoes = new Conexoes();
+            Estado estado = new Estado();
+            TransfereCC transfere = new TransfereCC(estado, portaEntrada,conexoes);
+            Thread t1 = new Thread((transfere));
+            t1.start();
+            while (true) {
+                System.out.println("----------------------------------------------CLIENTE-----------------------------------------------");
+                System.out.println("1-Download");
+                System.out.println("2-Upload");
+                System.out.println("3-Aceitar conexao -- Id de transferencia");
+                System.out.println("4-Rejeitar conexão --Id de tarnsferencia");
+                System.out.println("0-Sair");
 
 
+                tipo = parseInt(sin.readLine());
+                if (tipo == 0)
+                    System.exit(0);
+                else if(tipo==3) {
+                    System.out.println("Id da Transferencia");
+                    int id = parseInt(sin.readLine());
+                    Point p = new Point(3,id);
+                    conexoes.addOrdens(p);
 
-    public void run(){
-        try {
-            FileInputStream fis = new FileInputStream(new File(caminho));
-            try{
-                while(!transferenciaCompleta) {
-                    byte[] enviaDados = new byte[TAMANHO_PACOTE];
-                    byte[] dataBuffer = new byte[TAMANHO_PACOTE];
-                    int tamanhoDados = fis.read(dataBuffer, 0, TAMANHO_PACOTE);
-                    if(tamanhoDados<TAMANHO_PACOTE)
-                        transferenciaCompleta=true;
-                    byte[] dataBytes = Arrays.copyOfRange(dataBuffer, 0, tamanhoDados);
-                      enviaDados = gerarPacote(numPacote, dataBytes);
-                        int aux= numPacote;
-                        numPacote++;
-                        boolean pacoteEnviado=false;
-                       while(!pacoteEnviado) {
-                           //enviando pacote
-                           this.saida.send(new DatagramPacket(enviaDados, enviaDados.length, enderecoIP, 1234));
-                           byte[] recebeDados = new byte[CABECALHO];
-                           DatagramPacket recebePacote = new DatagramPacket(recebeDados, recebeDados.length);
-                           entrada.receive(recebePacote);
-                           int numAck = getnumAck(recebeDados);
-                           if(aux==numAck)
-                               pacoteEnviado=true;
-                           System.out.println("Cliente: Ack recebido " + numAck);
-                       }
-                    System.out.println("Cliente: Numero de pacote enviado "+numPacote);
+
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                this.saida.close();
-                fis.close();
-                System.out.println("Cliente: Socket de saida fechado!");
+                else if(tipo==4) {
+                    System.out.println("Id da Transferencia");
+                    int id = parseInt(sin.readLine());
+                    Point p = new Point(4,id);
+                    conexoes.addOrdens(p);
+
+                    //Transferencia t = estado.reject(id);
+                    //if(t!=null)
+                    //transfere.reject(id,t);
+                }
+
+
+
+                else if(tipo==1 || tipo==2) {
+                    System.out.println("Endereco do servidor: ");
+                    String enderecoIP = sin.readLine();
+                    System.out.println("Porta Destino");
+                    portaDestino = parseInt(sin.readLine());
+                    System.out.print("Diretoria do ficheiro + nome do ficheiro a ser enviado. (Ex: C:/Users/Diego/Documents/): ");
+                    String file = sin.readLine();
+
+                    int size = estado.getSize();
+                    Transferencia t = new Transferencia(tipo, size, enderecoIP, portaDestino, file);
+                    estado.addTransferencia(t);
+                }
             }
-        } catch (Exception e) {
+
+        } catch (IOException e) {
             e.printStackTrace();
-            System.exit(-1);
         }
     }
-
-
-    int getnumAck(byte[] pacote) {
-        byte[] numAckBytes = Arrays.copyOfRange(pacote, 0, CABECALHO);
-        return ByteBuffer.wrap(numAckBytes).getInt();
-    }
-
-
-
-    //cria o pacote com numero de sequencia e os dados
-    public byte[] gerarPacote(int numSeq, byte[] dadosByte) {
-        byte[] numSeqByte = ByteBuffer.allocate(CABECALHO).putInt(numSeq).array();
-        ByteBuffer bufferPacote = ByteBuffer.allocate(CABECALHO + dadosByte.length);
-        bufferPacote.put(numSeqByte);
-        bufferPacote.put(dadosByte);
-        return bufferPacote.array();
-    }
-
-
-
-
-
-    public static void main(String[] args) throws UnknownHostException  {
-            Scanner teclado = new Scanner(System.in);
-            System.out.println("----------------------------------------------CLIENTE-----------------------------------------------");
-          //  System.out.print("Digite o endereco do servidor: ");
-           // String enderecoIP = teclado.nextLine();
-            System.out.println("1-Download");
-            System.out.println("2-Upload");
-            System.out.print("Digite a diretoria do arquivo a ser enviado. (Ex: C:/Users/Diego/Documents/): ");
-            String diretoria = teclado.nextLine();
-            System.out.print("Digite o nome do arquivo a ser enviado: (Ex: letra.txt): ");
-            String nome = teclado.nextLine();
-            Cliente cliente = new Cliente(diretoria+nome,false,8010,8011);
-            cliente.run();
-        }
-    }
+}
