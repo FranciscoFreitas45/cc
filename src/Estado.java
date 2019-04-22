@@ -48,11 +48,14 @@ public class Estado {
         t.setPacote(p,numseq);
         lock.unlock();
     }
-    public void setAck(int id,int numseq){
+    public boolean setAck(int id,int numseq){
+        boolean x;
         lock.lock();
         Transferencia t = transferencias.get(id);
         t.setAck(numseq);
+         x = t.isTodosAcks();
         lock.unlock();
+        return x;
 
     }
 

@@ -17,10 +17,9 @@ public class ThreadRecebe  extends Thread  {
     public void run(){
         try{
             while(true){
-                byte[] recebeDados = new byte[Transferencia.TAMANHO_PACOTE];
+                byte[] recebeDados = new byte[1024];
                 DatagramPacket recebePacote = new DatagramPacket(recebeDados,recebeDados.length);
                 socket.receive(recebePacote);
-                System.out.println(recebeDados.length);
                 packets.add(recebePacote);
             }
         }

@@ -77,7 +77,7 @@ public class TransfereCC  extends Thread {
 
             ip = p.getAddress();
             portaDestino = p.getPort();
-            file = getFile(dados);
+            file = getFile(dados,p.getLength());
 
             Transferencia t = new Transferencia(2, id, ip, portaDestino, file);
             estado.addTransferencia(t);
@@ -95,9 +95,13 @@ public class TransfereCC  extends Thread {
             ip = p.getAddress();
             System.out.println(ip);
             portaDestino=p.getPort();
-            file=getFile(dados);
+            file=getFile(dados,p.getLength());
+            String[] parts = file.split("/");
+            String ficheiro = parts[parts.length-1];
+            System.out.println(file);
+            System.out.println(ficheiro);
 
-                Transferencia t = new Transferencia(1,id,ip,portaDestino,file);
+                Transferencia t = new Transferencia(1,id,ip,portaDestino,ficheiro);
                 estado.addTransferencia(t);
 
 
@@ -105,25 +109,42 @@ public class TransfereCC  extends Thread {
         else if (opcode==3){// recebi dados
             id = getIdTrans(dados);
             numSeq= getNumSeq(dados);
-            byte[] x = getDados(dados);
+            byte[] x = getDados(dados,p.getLength());
             PacoteDados pd = new PacoteDados(3,id,numSeq,x);
+            System.out.println("numSeq"+numSeq);
             estado.setPacote(pd,id,numSeq);
-            // enviar ack
+            PacoteAck ack = new PacoteAck(4,id,numSeq);
+            byte [] ackdados = ack.gerarPacote();
+                this.envia.add(new DatagramPacket(ackdados,ackdados.length,p.getAddress(),p.getPort()));
 
         }
 
         else if (opcode==4){// recebi um ack
+            System.out.println("recebi ack");
             id = getIdTrans(dados);
             numSeq= getNumSeq(dados);
-            estado.setAck(id,numSeq);
+            boolean x=estado.setAck(id,numSeq);
+            if(x){
+                PacoteAck ack = new PacoteAck(6,id,numSeq);
+                byte [] ackdados = ack.gerarPacote();
+                this.envia.add(new DatagramPacket(ackdados,ackdados.length,p.getAddress(),p.getPort()));
+            }
+
         }
 
         else if (opcode ==5){// resposta a pedido de conexão
             id = getIdTrans(dados);
-            System.out.println("recebi um 5 E O id É "+id);
+          //  System.out.println("recebi um 5 E O id É "+id);
             int r = getNumSeq(dados);
                     if(r==1)// aceitou
             estado.alterarconexao(id);
+        }
+        else if (opcode==6){// pacote final
+            id = getIdTrans(dados);
+            //System.out.println("recebi um 6 E O id É "+id);
+            Transferencia t =estado.getTransferencia(id);
+            t.escreveFicheiro();
+
         }
 
     }
@@ -162,6 +183,11 @@ public class TransfereCC  extends Thread {
                 pacotesRecebidos();
                        for(Transferencia t : estado.getTransferencias().values()){
                                 if(t.isConexaoEstabelecida()){
+                                    List<DatagramPacket> retransPacotes= t.checkAcks();
+                                    for(DatagramPacket d : retransPacotes) {
+                                        this.envia.add(d);
+                                    }
+
                          List<DatagramPacket> pacotes= t.getPackets();
                          for(DatagramPacket d : pacotes) {
                              this.envia.add(d);
@@ -202,14 +228,15 @@ public class TransfereCC  extends Thread {
         return ByteBuffer.wrap(getNum).getInt();
     }
 
-    String getFile(byte[] pacote) {
-        byte[] file = Arrays.copyOfRange(pacote, 8,pacote.length);
-        return ByteBuffer.wrap(file).toString();
+    String getFile(byte[] pacote,int tamanho) {
+        byte[] file = Arrays.copyOfRange(pacote, 8,tamanho);
+        String s = new String(file);
+        return s;
     }
 
 
-     byte[]getDados (byte[] pacote) {
-        byte[] dados = Arrays.copyOfRange(pacote, 12, pacote.length);
+     byte[]getDados (byte[] pacote,int tamanho) {
+        byte[] dados = Arrays.copyOfRange(pacote, 12, tamanho);
         return dados;
     }
 

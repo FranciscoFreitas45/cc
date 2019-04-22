@@ -12,7 +12,8 @@ public class PacoteWRQ extends Pacote {
     public byte [] gerarPacote(){
             byte[] code = ByteBuffer.allocate(Transferencia.CABECALHO).putInt(this.opcode).array();
             byte[] idtrans = ByteBuffer.allocate(Transferencia.CABECALHO).putInt(this.idTrans).array();
-            byte[] filebyte = this.file.getBytes(StandardCharsets.UTF_8);
+            byte[] filebyte = this.file.getBytes();
+            System.out.println("tamanho do ficheiro"+filebyte.length);
             ByteBuffer bufferPacote = ByteBuffer.allocate(Transferencia.CABECALHO*2 + filebyte.length);
             bufferPacote.put(code);
             bufferPacote.put(idtrans);
