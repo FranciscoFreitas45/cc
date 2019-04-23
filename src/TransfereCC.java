@@ -33,6 +33,8 @@ public class TransfereCC  extends Thread {
 
 
     public void accept(int id,Transferencia t){
+        if(t.isDownload())
+            t.setConexaoEstabelecida(true);
         System.out.println("ola");
            PacoteAck pAck = new PacoteAck(5,id,1);
                 byte[] enviar = pAck.gerarPacote();
@@ -78,8 +80,9 @@ public class TransfereCC  extends Thread {
             ip = p.getAddress();
             portaDestino = p.getPort();
             file = getFile(dados,p.getLength());
+            System.out.println(file);
 
-            Transferencia t = new Transferencia(2, id, ip, portaDestino, file);
+            Transferencia t = new Transferencia(2, id, ip, portaDestino, file,true);
             estado.addTransferencia(t);
         }
 
@@ -101,7 +104,7 @@ public class TransfereCC  extends Thread {
             System.out.println(file);
             System.out.println(ficheiro);
 
-                Transferencia t = new Transferencia(1,id,ip,portaDestino,ficheiro);
+                Transferencia t = new Transferencia(1,id,ip,portaDestino,ficheiro,true);
                 estado.addTransferencia(t);
 
 
@@ -141,7 +144,7 @@ public class TransfereCC  extends Thread {
         }
         else if (opcode==6){// pacote final
             id = getIdTrans(dados);
-            //System.out.println("recebi um 6 E O id É "+id);
+            System.out.println("recebi um 6 E O id É "+id);
             Transferencia t =estado.getTransferencia(id);
             t.escreveFicheiro();
 
@@ -182,7 +185,7 @@ public class TransfereCC  extends Thread {
                 veOrdens();
                 pacotesRecebidos();
                        for(Transferencia t : estado.getTransferencias().values()){
-                                if(t.isConexaoEstabelecida()){
+                                if(t.isConexaoEstabelecida() && t.getTipo()==2){
                                     List<DatagramPacket> retransPacotes= t.checkAcks();
                                     for(DatagramPacket d : retransPacotes) {
                                         this.envia.add(d);
@@ -193,7 +196,7 @@ public class TransfereCC  extends Thread {
                              this.envia.add(d);
                          }
                            }
-                           else{
+                           else if (!t.isDownload()){
                                 DatagramPacket d = t.getConexao();
                                     if(d!=null)
                                 this.envia.add(d);
@@ -203,7 +206,7 @@ public class TransfereCC  extends Thread {
                 // interpret_received_packet();
 
                 //System.out.println("Phase 2");
-                sleep(1000);
+                sleep(10);
             }
 
         } catch (SocketException | InterruptedException e) {

@@ -21,6 +21,7 @@ public class Transferencia {
     private Map<Integer,Boolean>acks;
     private boolean completa;
     private int n_tentativas=0;
+    private boolean download;
 
 
 
@@ -39,6 +40,7 @@ public class Transferencia {
         this.pacotes = new HashMap<>();
         this.acks =new HashMap<>();
         this.completa=false;
+        this.download=false;
         downORup();
     }
 
@@ -48,19 +50,47 @@ public class Transferencia {
         this.tipo = tipo;
         this.ip = ip;
         this.portaDestino = portaDestino;
-        this.file = file;
+        this.file=file;
         this.ultimoEnviado = 0;
         this.conexaoEstabelecida = false;
         this.pacotes = new HashMap<>();
         this.acks = new HashMap<>();
         this.completa = false;
+        this.download=false;
         downORup();
+    }
+
+
+    public boolean isDownload() {
+        return download;
+    }
+
+    public Transferencia(int tipo, int id, InetAddress ip, int portaDestino, String file, boolean download) {
+        this.id = id;
+        this.tipo = tipo;
+        this.ip = ip;
+        this.portaDestino = portaDestino;
+        this.file=file;
+        this.ultimoEnviado = 0;
+        this.conexaoEstabelecida = false;
+        this.pacotes = new HashMap<>();
+        this.acks = new HashMap<>();
+        this.completa = false;
+        this.download=download;
+        downORup();
+
+    }
+
+
+
+    public int getTipo() {
+        return tipo;
     }
 
     public void downORup(){
         if(this.tipo==2){
             PacoteWRQ pWRQ = new PacoteWRQ(2,id,file);
-           // System.out.println(file);
+            System.out.println("o titulo é "+file);
             byte []cone = pWRQ.gerarPacote();
             //System.out.println("tamaho do cone "+cone.length);
             this.conexao = new DatagramPacket(cone, cone.length,this.ip,this.portaDestino);
@@ -87,6 +117,13 @@ public class Transferencia {
                 e.printStackTrace();
             }
         }
+       if(this.tipo==1){
+           PacoteWRQ pWRQ = new PacoteWRQ(1,id,file);
+           // System.out.println(file);
+           byte []cone = pWRQ.gerarPacote();
+           this.conexao = new DatagramPacket(cone, cone.length,this.ip,this.portaDestino);
+       }
+
     }
 
     public List<DatagramPacket> getPackets(){
@@ -99,6 +136,7 @@ public class Transferencia {
                 DatagramPacket datapacket = new DatagramPacket(pacote, pacote.length,this.ip,this.portaDestino);
                 datagramPackets.add(datapacket);
                 ultimoEnviado++;
+                i++;
         }
             return datagramPackets;
 
@@ -187,7 +225,10 @@ public class Transferencia {
 
     public void escreveFicheiro(){
         try {
-                File ficheiro= new File(this.file);
+            String[] parts = file.split("/");
+            String nome_ficheiro = parts[parts.length-1];
+
+                File ficheiro= new File(nome_ficheiro);
             FileOutputStream fos = new FileOutputStream(ficheiro);
         for(Pacote p : this.pacotes.values()) {
             PacoteDados pd =(PacoteDados)p;
