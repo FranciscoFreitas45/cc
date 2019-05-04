@@ -59,10 +59,11 @@ public class Estado {
 
     }
 
-    public void alterarconexao(int id){
+    public void alterarconexao(int id,int tamanhojanela){
         lock.lock();
         Transferencia t = transferencias.get(id);
         t.setConexaoEstabelecida(true);
+        t.setCap_socket_recetor(tamanhojanela);
         lock.unlock();
     }
     public Transferencia Accept(int i){
@@ -80,5 +81,15 @@ public class Estado {
         t = this.transferencias.get(i);
         lock.unlock();
         return t;
+    }
+
+    public void putRcvwindow(int tamanho){
+    lock.lock();
+        for(Transferencia t: transferencias.values()){
+            if(t.getCap_socket_recetor()==0){// é sempre incializado a 0 e esta funçao serve para alterar esse avalor
+                    t.setCap_socket_recetor(tamanho);
+            }
+        }
+        lock.unlock();
     }
 }

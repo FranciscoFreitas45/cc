@@ -21,6 +21,8 @@ public class TransfereCC  extends Thread {
     private DatagramPacketBuffer recebe;
     private DatagramPacketBuffer envia;
 
+
+
     public TransfereCC(Estado estado, int portaEntrada,Conexoes conexoes) {
         this.portaEntrada = portaEntrada;
         this.estado = estado;
@@ -32,25 +34,33 @@ public class TransfereCC  extends Thread {
 
 
 
-    public void accept(int id,Transferencia t){
-        if(t.isDownload())
+    public void accept(int id,Transferencia t,int tamanho){
+        if(!t.isPedido())// transferencia nao pode ser um pedido deste utilizador mas sim de outro
             t.setConexaoEstabelecida(true);
-        System.out.println("ola");
-           PacoteAck pAck = new PacoteAck(5,id,1);
-                byte[] enviar = pAck.gerarPacote();
-                DatagramPacket envia =  new DatagramPacket(enviar,enviar.length,t.getIp(),t.getPortaDestino());
-                this.envia.add(envia);
+      if(t.getTipo()==1)// download
+      {
+              PacoteAck pAck = new PacoteAck(5,id,1,tamanho);
+              byte[] enviar = pAck.gerarPacote();
+              DatagramPacket envia =  new DatagramPacket(enviar,enviar.length,t.getIp(),t.getPortaDestino());
+              this.envia.add(envia);
+      }
+      else{
+          PacoteAck pAck = new PacoteAck(5,id,1,0);
+          byte[] enviar = pAck.gerarPacote();
+          DatagramPacket envia =  new DatagramPacket(enviar,enviar.length,t.getIp(),t.getPortaDestino());
+          this.envia.add(envia);
+      }
 
 
     }
 
-    public void reject(int id,Transferencia t){
+   /* public void reject(int id,Transferencia t){
         PacoteAck pAck = new PacoteAck(5,id,2);
         byte[] enviar = pAck.gerarPacote();
         DatagramPacket envia =  new DatagramPacket(enviar,enviar.length,t.getIp(),t.getPortaDestino());
         this.envia.add(envia);
     }
-
+*/
 
     public void pacotesRecebidos(){
 
@@ -75,14 +85,15 @@ public class TransfereCC  extends Thread {
             System.out.println("o  cliente com endereco " + p.getAddress() + " e porta " + p.getPort() + " quer fazer download");
             id = getIdTrans(dados);
             System.out.println("id da transacao" + id);
-
+            numSeq=getNumSeq(dados);// neste caso representa a tamanho da janela e nao o numseq;
 
             ip = p.getAddress();
             portaDestino = p.getPort();
             file = getFile(dados,p.getLength());
             System.out.println(file);
 
-            Transferencia t = new Transferencia(2, id, ip, portaDestino, file,true);
+            Transferencia t = new Transferencia(2, id, ip, portaDestino, file,false);
+            t.setCap_socket_recetor(numSeq);
             estado.addTransferencia(t);
         }
 
@@ -104,7 +115,7 @@ public class TransfereCC  extends Thread {
             System.out.println(file);
             System.out.println(ficheiro);
 
-                Transferencia t = new Transferencia(1,id,ip,portaDestino,ficheiro,true);
+                Transferencia t = new Transferencia(1,id,ip,portaDestino,ficheiro,false);
                 estado.addTransferencia(t);
 
 
@@ -116,7 +127,7 @@ public class TransfereCC  extends Thread {
             PacoteDados pd = new PacoteDados(3,id,numSeq,x);
             System.out.println("numSeq"+numSeq);
             estado.setPacote(pd,id,numSeq);
-            PacoteAck ack = new PacoteAck(4,id,numSeq);
+            PacoteAck ack = new PacoteAck(4,id,numSeq,0);
             byte [] ackdados = ack.gerarPacote();
                 this.envia.add(new DatagramPacket(ackdados,ackdados.length,p.getAddress(),p.getPort()));
 
@@ -128,7 +139,7 @@ public class TransfereCC  extends Thread {
             numSeq= getNumSeq(dados);
             boolean x=estado.setAck(id,numSeq);
             if(x){
-                PacoteAck ack = new PacoteAck(6,id,numSeq);
+                PacoteAck ack = new PacoteAck(6,id,numSeq,0);
                 byte [] ackdados = ack.gerarPacote();
                 this.envia.add(new DatagramPacket(ackdados,ackdados.length,p.getAddress(),p.getPort()));
             }
@@ -137,10 +148,11 @@ public class TransfereCC  extends Thread {
 
         else if (opcode ==5){// resposta a pedido de conexão
             id = getIdTrans(dados);
-          //  System.out.println("recebi um 5 E O id É "+id);
+            System.out.println("recebi um 5 E O id É "+id);
             int r = getNumSeq(dados);
+            int janela=getTamJanela(dados);
                     if(r==1)// aceitou
-            estado.alterarconexao(id);
+            estado.alterarconexao(id,janela);
         }
         else if (opcode==6){// pacote final
             id = getIdTrans(dados);
@@ -154,7 +166,7 @@ public class TransfereCC  extends Thread {
 
 
 
-    public void veOrdens(){
+    public void veOrdens(int tamanho){
         List<Point> ordens = this.conexoes.getOrdens();
           if(ordens.size()>0){
                     for(Point p : ordens){
@@ -162,7 +174,7 @@ public class TransfereCC  extends Thread {
                         int y =(int)p.getY();
                         if(x==3){
                          Transferencia t = estado.getTransferencia(y);
-                         accept(y,t);
+                         accept(y,t,tamanho);
                         }
                     }
                 }
@@ -178,28 +190,28 @@ public class TransfereCC  extends Thread {
             Thread t2 = new Thread(new ThreadRecebe(this.recebe, socket));
             t1.start();
             t2.start();
+            int tamanho =socket.getReceiveBufferSize();
 
             while (true) {
 
-
-                veOrdens();
+                estado.putRcvwindow(tamanho);
+                veOrdens(tamanho);
                 pacotesRecebidos();
                        for(Transferencia t : estado.getTransferencias().values()){
                                 if(t.isConexaoEstabelecida() && t.getTipo()==2){
-                                    List<DatagramPacket> retransPacotes= t.checkAcks();
-                                    for(DatagramPacket d : retransPacotes) {
-                                        this.envia.add(d);
-                                    }
 
                          List<DatagramPacket> pacotes= t.getPackets();
                          for(DatagramPacket d : pacotes) {
                              this.envia.add(d);
                          }
                            }
-                           else if (!t.isDownload()){
+                           else if (t.isPedido()){
                                 DatagramPacket d = t.getConexao();
-                                    if(d!=null)
-                                this.envia.add(d);
+                                    if(d!=null){
+                                        this.envia.add(d);
+                                        System.out.println("eeee");
+                                    }
+                                  // else System.out.println("null");
                                 }
                        }
                 //System.out.println("Phase 1");
@@ -209,8 +221,9 @@ public class TransfereCC  extends Thread {
                 sleep(10);
             }
 
-        } catch (SocketException | InterruptedException e) {
+        } catch (InterruptedException | SocketException e) {
             e.printStackTrace();
+            System.out.println("erro");
         }
 
 
@@ -230,12 +243,17 @@ public class TransfereCC  extends Thread {
         byte[] getNum = Arrays.copyOfRange(pacote, 8, 12);
         return ByteBuffer.wrap(getNum).getInt();
     }
+    int getTamJanela(byte[] pacote) {
+        byte[] getNum = Arrays.copyOfRange(pacote, 12, 16);
+        return ByteBuffer.wrap(getNum).getInt();
+    }
 
     String getFile(byte[] pacote,int tamanho) {
-        byte[] file = Arrays.copyOfRange(pacote, 8,tamanho);
+        byte[] file = Arrays.copyOfRange(pacote, 12,tamanho);
         String s = new String(file);
         return s;
     }
+
 
 
      byte[]getDados (byte[] pacote,int tamanho) {

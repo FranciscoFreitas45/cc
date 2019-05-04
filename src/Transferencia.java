@@ -15,13 +15,16 @@ public class Transferencia {
     private int portaDestino;
     private  String file ;
     private int ultimoEnviado;
+    private int ultimoConfirmado;
     private boolean conexaoEstabelecida;
     private DatagramPacket conexao;
     private Map<Integer,Pacote> pacotes;
     private Map<Integer,Boolean>acks;
     private boolean completa;
     private int n_tentativas=0;
-    private boolean download;
+    private int cap_socket_recetor;
+    private Janela janela;
+    private boolean pedido;
 
 
 
@@ -34,16 +37,23 @@ public class Transferencia {
             e.printStackTrace();
         }
         this.ultimoEnviado=0;
+        this.ultimoConfirmado=0;
         this.conexaoEstabelecida=false;
         this.portaDestino = portaDestino;
         this.file = file;
         this.pacotes = new HashMap<>();
         this.acks =new HashMap<>();
         this.completa=false;
-        this.download=false;
+        this.pedido=true;
+        this.cap_socket_recetor=0;
+        this.janela=new Janela();
         downORup();
     }
 
+
+    public int getCap_socket_recetor() {
+        return cap_socket_recetor;
+    }
 
     public Transferencia(int tipo, int id, InetAddress ip, int portaDestino, String file) {
         this.id = id;
@@ -52,31 +62,37 @@ public class Transferencia {
         this.portaDestino = portaDestino;
         this.file=file;
         this.ultimoEnviado = 0;
+        this.ultimoConfirmado=0;
         this.conexaoEstabelecida = false;
         this.pacotes = new HashMap<>();
         this.acks = new HashMap<>();
         this.completa = false;
-        this.download=false;
+        this.pedido=true;
+        this.cap_socket_recetor=0;
+        this.janela=new Janela();
         downORup();
     }
 
 
-    public boolean isDownload() {
-        return download;
+    public boolean isPedido() {
+        return pedido;
     }
 
-    public Transferencia(int tipo, int id, InetAddress ip, int portaDestino, String file, boolean download) {
+    public Transferencia(int tipo, int id, InetAddress ip, int portaDestino, String file, boolean pedido) {
         this.id = id;
         this.tipo = tipo;
         this.ip = ip;
         this.portaDestino = portaDestino;
         this.file=file;
         this.ultimoEnviado = 0;
+        this.ultimoConfirmado=0;
         this.conexaoEstabelecida = false;
         this.pacotes = new HashMap<>();
         this.acks = new HashMap<>();
         this.completa = false;
-        this.download=download;
+        this.pedido=pedido;
+        this.cap_socket_recetor=0;
+        this.janela=new Janela();
         downORup();
 
     }
@@ -87,13 +103,22 @@ public class Transferencia {
         return tipo;
     }
 
+    public void setCap_socket_recetor(int cap_socket_recetor) {
+        this.cap_socket_recetor = cap_socket_recetor;
+        PacoteWRQ pWRQ = new PacoteWRQ(this.tipo,id,0,file);
+        // System.out.println(file);
+        byte []cone = pWRQ.gerarPacote();
+        this.conexao = new DatagramPacket(cone, cone.length,this.ip,this.portaDestino);
+
+    }
+
     public void downORup(){
         if(this.tipo==2){
-            PacoteWRQ pWRQ = new PacoteWRQ(2,id,file);
-            System.out.println("o titulo é "+file);
-            byte []cone = pWRQ.gerarPacote();
+          //  PacoteWRQ pWRQ = new PacoteWRQ(2,id,0,file);
+           // System.out.println("o titulo é "+file);
+            //byte []cone = pWRQ.gerarPacote();
             //System.out.println("tamaho do cone "+cone.length);
-            this.conexao = new DatagramPacket(cone, cone.length,this.ip,this.portaDestino);
+            //this.conexao = new DatagramPacket(cone, cone.length,this.ip,this.portaDestino);
             try {
                 boolean x= true;
                 int i=0;
@@ -117,19 +142,36 @@ public class Transferencia {
                 e.printStackTrace();
             }
         }
-       if(this.tipo==1){
-           PacoteWRQ pWRQ = new PacoteWRQ(1,id,file);
-           // System.out.println(file);
-           byte []cone = pWRQ.gerarPacote();
-           this.conexao = new DatagramPacket(cone, cone.length,this.ip,this.portaDestino);
-       }
 
     }
 
     public List<DatagramPacket> getPackets(){
-            int i =0;
-            List<DatagramPacket> datagramPackets=new ArrayList<>();
-            while(i<5 && ultimoEnviado<this.pacotes.size()){
+            int i =0,j=0;
+            int max_pacotes= this.cap_socket_recetor/(TAMANHO_PACOTE+4*CABECALHO);
+        int max_janela = this.janela.getTamanho();
+        if(ultimoConfirmado!=ultimoEnviado) {
+            this.janela.timeOut();
+            max_janela = this.janela.getTamanho();
+        }
+        List<DatagramPacket> datagramPackets=new ArrayList<>();
+            // retransmitir perdidos
+        for(j=ultimoConfirmado+1;j<this.ultimoEnviado;j++) {
+            if (i < max_janela) {
+                if (!this.acks.get(j)) {// caso ainda nao tenha o ack, tem que retransmitir o pacote pois nao recebeu o ack de confirmação
+                        System.out.println("restranmiti o pacote " + j);
+                        Pacote p = pacotes.get(j);
+                        PacoteDados pd = (PacoteDados) p;
+                        byte[] pacote = pd.gerarPacote();
+                        DatagramPacket datapacket = new DatagramPacket(pacote, pacote.length, this.ip, this.portaDestino);
+                        datagramPackets.add(datapacket);
+                        i++;
+                }
+            }
+        }
+            // enviar novos
+
+
+            while(i<max_janela && ultimoEnviado<this.pacotes.size()){
               Pacote p = pacotes.get(ultimoEnviado);
               PacoteDados pd = (PacoteDados) p;
                 byte[] pacote = pd.gerarPacote();
@@ -193,6 +235,7 @@ public class Transferencia {
 
     public void setAck(int numseq){
         this.acks.replace(numseq,true);
+        todosConfirmadosAte();
     }
 
 
@@ -204,7 +247,7 @@ public class Transferencia {
         }
         return x;
     }
-
+/*
     public List<DatagramPacket> checkAcks(){
         int i =0;
         List<DatagramPacket> datagramPackets=new ArrayList<>();
@@ -221,7 +264,19 @@ public class Transferencia {
         return datagramPackets;
     }
 
+*/
 
+public void todosConfirmadosAte(){
+    int i=ultimoConfirmado;
+    for(;i<ultimoEnviado;i++){
+            boolean ack=this.acks.get(i);
+            if(ack)
+                this.ultimoConfirmado=i;
+            else{
+                break;
+            }
+    }
+}
 
     public void escreveFicheiro(){
         try {
