@@ -134,11 +134,11 @@ public class TransfereCC  extends Thread {
         }
 
         else if (opcode==4){// recebi um ack
-            System.out.println("recebi ack");
+           // System.out.println("recebi ack");
             id = getIdTrans(dados);
             numSeq= getNumSeq(dados);
-            boolean x=estado.setAck(id,numSeq);
-            if(x){
+            int x=estado.setAck(id,numSeq);// se devolver 1 ja recebeu os ack todos,2 se recebeu todos os ack do chunk, 3 se nao recebeu os ack todos do chunk ainda
+            if(x==1 || x==2){
                 PacoteAck ack = new PacoteAck(6,id,numSeq,0);
                 byte [] ackdados = ack.gerarPacote();
                 this.envia.add(new DatagramPacket(ackdados,ackdados.length,p.getAddress(),p.getPort()));
@@ -198,7 +198,7 @@ public class TransfereCC  extends Thread {
                 veOrdens(tamanho);
                 pacotesRecebidos();
                        for(Transferencia t : estado.getTransferencias().values()){
-                                if(t.isConexaoEstabelecida() && t.getTipo()==2){
+                                if(t.isConexaoEstabelecida() && t.getTipo()==2 && t.possoTransmitir()){
 
                          List<DatagramPacket> pacotes= t.getPackets();
                          for(DatagramPacket d : pacotes) {
@@ -218,10 +218,9 @@ public class TransfereCC  extends Thread {
                 // interpret_received_packet();
 
                 //System.out.println("Phase 2");
-                sleep(10);
             }
 
-        } catch (InterruptedException | SocketException e) {
+        } catch (SocketException e) {
             e.printStackTrace();
             System.out.println("erro");
         }

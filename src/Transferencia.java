@@ -9,6 +9,7 @@ public class Transferencia {
     static final int CABECALHO = 4;
     static final int TAMANHO_PACOTE = 512;// (numSeq:4, dados=1000) Bytes : 1004 Bytes total
     static final int MAX_Tentativas=3;
+    static final int MAX_PACOTES=20480; // corresponde ao numero de bytes;
     private int id;
     private int tipo;
     private InetAddress ip;
@@ -25,6 +26,9 @@ public class Transferencia {
     private int cap_socket_recetor;
     private Janela janela;
     private boolean pedido;
+    private int num_pacotes_enviados;
+    private RTT rtt;
+    private Ficheiro ficheiro;
 
 
 
@@ -46,7 +50,10 @@ public class Transferencia {
         this.completa=false;
         this.pedido=true;
         this.cap_socket_recetor=0;
+        this.num_pacotes_enviados=0;
         this.janela=new Janela();
+        this.rtt=new RTT(this.ip);
+        this.ficheiro=new Ficheiro(this.file);
         downORup();
     }
 
@@ -55,23 +62,6 @@ public class Transferencia {
         return cap_socket_recetor;
     }
 
-    public Transferencia(int tipo, int id, InetAddress ip, int portaDestino, String file) {
-        this.id = id;
-        this.tipo = tipo;
-        this.ip = ip;
-        this.portaDestino = portaDestino;
-        this.file=file;
-        this.ultimoEnviado = 0;
-        this.ultimoConfirmado=0;
-        this.conexaoEstabelecida = false;
-        this.pacotes = new HashMap<>();
-        this.acks = new HashMap<>();
-        this.completa = false;
-        this.pedido=true;
-        this.cap_socket_recetor=0;
-        this.janela=new Janela();
-        downORup();
-    }
 
 
     public boolean isPedido() {
@@ -92,7 +82,10 @@ public class Transferencia {
         this.completa = false;
         this.pedido=pedido;
         this.cap_socket_recetor=0;
+        this.num_pacotes_enviados=0;
         this.janela=new Janela();
+        this.rtt=new RTT(this.ip);
+        this.ficheiro=new Ficheiro(this.file);
         downORup();
 
     }
@@ -112,36 +105,45 @@ public class Transferencia {
 
     }
 
-    public void downORup(){
-        if(this.tipo==2){
-          //  PacoteWRQ pWRQ = new PacoteWRQ(2,id,0,file);
-           // System.out.println("o titulo é "+file);
-            //byte []cone = pWRQ.gerarPacote();
-            //System.out.println("tamaho do cone "+cone.length);
-            //this.conexao = new DatagramPacket(cone, cone.length,this.ip,this.portaDestino);
-            try {
-                boolean x= true;
-                int i=0;
-                FileInputStream fis = new FileInputStream(new File(this.file));
-                while(x) {
-                    byte[] dataBuffer = new byte[TAMANHO_PACOTE];
-                     int tamanho = fis.read(dataBuffer, 0, TAMANHO_PACOTE);
-                     if(tamanho<TAMANHO_PACOTE)
-                         x=false;
-                    byte[] dataBytes = Arrays.copyOfRange(dataBuffer, 0, tamanho);
-                    PacoteDados pd = new PacoteDados(3,this.id,i,dataBytes);
-                    this.pacotes.put(i,pd);
-                    this.acks.put(i,false);
-                    i++;
-                }
-                System.out.println("o tamanho do ficheiro e "+i+" pacotes" );
-                fis.close();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+
+    public void obtemDados(){
+
+        List<byte[]> dados = ficheiro.getPacotes();
+        if(dados.size()==0){
+            this.completa=true;
+            return ;
         }
+        ultimoEnviado=0;
+        int i=0;
+        int tamanhoBytes=0;
+        PacoteWRQ pWRQ = new PacoteWRQ(2,id,0,file);
+        System.out.println("o titulo é "+file);
+        byte []cone = pWRQ.gerarPacote();
+        this.conexao = new DatagramPacket(cone, cone.length,this.ip,this.portaDestino);
+        for(byte[] d : dados) {
+            tamanhoBytes+=d.length;
+            PacoteDados pd = new PacoteDados(3, this.id, i, d);
+            this.pacotes.put(i, pd);
+            this.acks.put(i, false);
+            i++;
+        }
+        if(tamanhoBytes!=Ficheiro.MAX) {
+            System.out.println("li  "+tamanhoBytes+ " bytes " );
+            this.completa = true;
+        }
+    }
+
+    public void downORup(){
+
+        if(this.tipo==2){
+           this.ficheiro.inicia_leitura();
+           obtemDados();
+        }
+        else{
+            this.ficheiro.iniciaEscrita();
+        }
+
+
 
     }
 
@@ -154,6 +156,7 @@ public class Transferencia {
             max_janela = this.janela.getTamanho();
         }
         List<DatagramPacket> datagramPackets=new ArrayList<>();
+        List<Integer> pacotes_enviados=new ArrayList<>();
             // retransmitir perdidos
         for(j=ultimoConfirmado+1;j<this.ultimoEnviado;j++) {
             if (i < max_janela) {
@@ -165,6 +168,7 @@ public class Transferencia {
                         DatagramPacket datapacket = new DatagramPacket(pacote, pacote.length, this.ip, this.portaDestino);
                         datagramPackets.add(datapacket);
                         i++;
+                        pacotes_enviados.add(j);
                 }
             }
         }
@@ -179,7 +183,10 @@ public class Transferencia {
                 datagramPackets.add(datapacket);
                 ultimoEnviado++;
                 i++;
+                pacotes_enviados.add(j);
         }
+            this.num_pacotes_enviados=datagramPackets.size();
+            this.rtt.start(pacotes_enviados);
             return datagramPackets;
 
     }
@@ -209,20 +216,6 @@ public class Transferencia {
         return portaDestino;
     }
 
-    public String getFile() {
-        return file;
-    }
-
-    public Map<Integer,Pacote> getPacotes() {
-        return pacotes;
-    }
-
-    public Map<Integer, Boolean> getAcks() {
-        return acks;
-    }
-    public void setId(int id) {
-        this.id = id;
-    }
 
     public void setPacote(Pacote p,int numseq){
             this.pacotes.put(numseq,p);
@@ -234,10 +227,22 @@ public class Transferencia {
     }
 
     public void setAck(int numseq){
+            rtt.atualizaTimeOut(numseq);
+            num_pacotes_enviados--;
+         boolean x=this.acks.get(numseq);
+         if(x) {
+             System.out.println("ACK DUPLICADO do pacote " + numseq);
+             janela.ackDuplicado();
+         }
+         else
         this.acks.replace(numseq,true);
         todosConfirmadosAte();
     }
 
+
+    public boolean isCompleta() {
+        return completa;
+    }
 
     public boolean isTodosAcks(){
         boolean x= true;
@@ -266,6 +271,18 @@ public class Transferencia {
 
 */
 
+public boolean possoTransmitir(){
+    if(num_pacotes_enviados==0)
+        return true;
+    if(rtt.timedOut()) {
+        janela.timeOut();
+        return true;
+    }
+    else return false;
+}
+
+
+
 public void todosConfirmadosAte(){
     int i=ultimoConfirmado;
     for(;i<ultimoEnviado;i++){
@@ -278,23 +295,7 @@ public void todosConfirmadosAte(){
     }
 }
 
-    public void escreveFicheiro(){
-        try {
-            String[] parts = file.split("/");
-            String nome_ficheiro = parts[parts.length-1];
-
-                File ficheiro= new File(nome_ficheiro);
-            FileOutputStream fos = new FileOutputStream(ficheiro);
-        for(Pacote p : this.pacotes.values()) {
-            PacoteDados pd =(PacoteDados)p;
-            byte  [] dados = pd.gerarPacote();
-            fos.write(dados, CABECALHO*3, dados.length- CABECALHO*3);
-        }
-        fos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+    public void escreveFicheiro() {
+        this.ficheiro.escreveFicheiro(this.pacotes);
     }
-
 }

@@ -9,7 +9,6 @@ public class PacoteDados extends Pacote {
         super(opcode,id);
         this.numSeq=numSeq;
         this.dados=dados;
-        System.out.println("tamanho de dados"+dados.length);
     }
 
 
