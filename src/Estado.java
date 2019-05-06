@@ -13,8 +13,13 @@ public class Estado {
     }
 
     public void addTransferencia(Transferencia t){
+        int x;
         this.lock.lock();
-        this.transferencias.put(t.getId(),t);
+        if(t.isPedido())// caso em que é um pedido meu
+        x= transferencias.size();
+        else x= t.getId();// caso em que o id vem de fora
+        t.setId(x);
+        this.transferencias.put(x,t);
         System.out.println(this.transferencias.toString());
         this.lock.unlock();
     }

@@ -18,8 +18,7 @@ public class Cliente {
 
             portaEntrada = parseInt(sin.readLine());
             Conexoes conexoes = new Conexoes();
-            Estado estado = new Estado();
-            TransfereCC transfere = new TransfereCC(estado, portaEntrada,conexoes);
+            TransfereCC transfere = new TransfereCC(portaEntrada,conexoes);
             Thread t1 = new Thread((transfere));
             t1.start();
             while (true) {
@@ -63,9 +62,8 @@ public class Cliente {
                     System.out.print("Diretoria do ficheiro + nome do ficheiro a ser enviado. (Ex: C:/Users/Diego/Documents/): ");
                     String file = sin.readLine();
 
-                    int size = estado.getSize();
-                    Transferencia t = new Transferencia(tipo, size, enderecoIP, portaDestino, file);
-                    estado.addTransferencia(t);
+                    Transferencia t = new Transferencia(tipo,enderecoIP, portaDestino, file);// valor do id será alterado quando for adicionado no estado
+                    conexoes.addTransferencias(t);
                 }
             }
 

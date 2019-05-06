@@ -23,9 +23,9 @@ public class TransfereCC  extends Thread {
 
 
 
-    public TransfereCC(Estado estado, int portaEntrada,Conexoes conexoes) {
+    public TransfereCC(int portaEntrada,Conexoes conexoes) {
         this.portaEntrada = portaEntrada;
-        this.estado = estado;
+        this.estado = new Estado();
         this.conexoes=conexoes;
         this.recebe = new DatagramPacketBuffer();
         this.envia = new DatagramPacketBuffer();
@@ -179,6 +179,12 @@ public class TransfereCC  extends Thread {
                     }
                 }
     }
+    public void vePedidos(){
+        List<Transferencia> pedidos = this.conexoes.getTransferencias();
+        for(Transferencia t : pedidos){
+            estado.addTransferencia(t);
+        }
+    }
 
 
     public void run ()
@@ -196,6 +202,7 @@ public class TransfereCC  extends Thread {
 
                 estado.putRcvwindow(tamanho);
                 veOrdens(tamanho);
+                vePedidos();
                 pacotesRecebidos();
                        for(Transferencia t : estado.getTransferencias().values()){
                                 if(t.isConexaoEstabelecida() && t.getTipo()==2 && t.possoTransmitir()){

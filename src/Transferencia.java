@@ -32,9 +32,9 @@ public class Transferencia {
 
 
 
-    public Transferencia(int tipo,int id, String ip, int portaDestino, String file){
+    public Transferencia(int tipo, String ip, int portaDestino, String file){
         this.tipo=tipo;
-        this.id=id;
+        this.id=0;
         try {
             this.ip = InetAddress.getByName(ip);
         } catch (UnknownHostException e) {
@@ -54,7 +54,6 @@ public class Transferencia {
         this.janela=new Janela();
         this.rtt=new RTT(this.ip);
         this.ficheiro=new Ficheiro(this.file);
-        downORup();
     }
 
 
@@ -203,10 +202,15 @@ public class Transferencia {
         return conexao;
     }
 
+    public void setId(int id) {
+        this.id = id;
+        downORup();
+    }
 
     public int getId() {
         return id;
     }
+
 
     public InetAddress getIp() {
         return ip;
