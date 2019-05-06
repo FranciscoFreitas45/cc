@@ -134,9 +134,9 @@ public class TransfereCC  extends Thread {
         }
 
         else if (opcode==4){// recebi um ack
-           // System.out.println("recebi ack");
             id = getIdTrans(dados);
             numSeq= getNumSeq(dados);
+            System.out.println("recebi ack com "+numSeq);
             int x=estado.setAck(id,numSeq);// se devolver 1 ja recebeu os ack todos,2 se recebeu todos os ack do chunk, 3 se nao recebeu os ack todos do chunk ainda
             if(x==1 || x==2){
                 PacoteAck ack = new PacoteAck(6,id,numSeq,0);

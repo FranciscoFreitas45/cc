@@ -40,8 +40,8 @@ public class Transferencia {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        this.ultimoEnviado=0;
-        this.ultimoConfirmado=0;
+        this.ultimoEnviado=-1;
+        this.ultimoConfirmado=-1;
         this.conexaoEstabelecida=false;
         this.portaDestino = portaDestino;
         this.file = file;
@@ -73,8 +73,8 @@ public class Transferencia {
         this.ip = ip;
         this.portaDestino = portaDestino;
         this.file=file;
-        this.ultimoEnviado = 0;
-        this.ultimoConfirmado=0;
+        this.ultimoEnviado = -1;
+        this.ultimoConfirmado=-1;
         this.conexaoEstabelecida = false;
         this.pacotes = new HashMap<>();
         this.acks = new HashMap<>();
@@ -112,7 +112,10 @@ public class Transferencia {
             this.completa=true;
             return ;
         }
-        ultimoEnviado=0;
+	this.pacotes.clear();
+	this.acks.clear();
+        ultimoEnviado=-1;
+	ultimoConfirmado=-1;
         int i=0;
         int tamanhoBytes=0;
         PacoteWRQ pWRQ = new PacoteWRQ(2,id,0,file);
@@ -157,7 +160,7 @@ public class Transferencia {
         List<DatagramPacket> datagramPackets=new ArrayList<>();
         List<Integer> pacotes_enviados=new ArrayList<>();
             // retransmitir perdidos
-        for(j=ultimoConfirmado+1;j<this.ultimoEnviado;j++) {
+        for(j=ultimoConfirmado+1;j<this.ultimoEnviado+1;j++) {
             if (i < max_janela) {
                 if (!this.acks.get(j)) {// caso ainda nao tenha o ack, tem que retransmitir o pacote pois nao recebeu o ack de confirmação
                         System.out.println("restranmiti o pacote " + j);
@@ -175,7 +178,7 @@ public class Transferencia {
 
 
             while(i<max_janela && ultimoEnviado<this.pacotes.size()){
-              Pacote p = pacotes.get(ultimoEnviado);
+              Pacote p = pacotes.get(ultimoEnviado+1);
               PacoteDados pd = (PacoteDados) p;
                 byte[] pacote = pd.gerarPacote();
                 DatagramPacket datapacket = new DatagramPacket(pacote, pacote.length,this.ip,this.portaDestino);
@@ -239,7 +242,7 @@ public class Transferencia {
              janela.ackDuplicado();
          }
          else
-        this.acks.replace(numseq,true);
+        this.acks.put(numseq,true);
         todosConfirmadosAte();
     }
 
@@ -288,7 +291,7 @@ public boolean possoTransmitir(){
 
 
 public void todosConfirmadosAte(){
-    int i=ultimoConfirmado;
+    int i=ultimoConfirmado+1;
     for(;i<ultimoEnviado;i++){
             boolean ack=this.acks.get(i);
             if(ack)

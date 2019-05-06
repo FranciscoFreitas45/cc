@@ -58,11 +58,14 @@ public class Estado {
         lock.lock();
         Transferencia t = transferencias.get(id);
         t.setAck(numseq);
-        if(t.isTodosAcks() && t.isCompleta())
+        if(t.isTodosAcks() && t.isCompleta()){
             x=1;
+System.out.println("ACABEI TRANSFERENCIA");
+}
         else if(t.isTodosAcks()){
             x=2;
             t.obtemDados();
+	    System.out.println("TRANSMITI OS PACOTES TODOS");
         }
         else x=3;
         lock.unlock();

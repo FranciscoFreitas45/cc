@@ -2,7 +2,7 @@ import java.io.*;
 import java.util.*;
 
 public class Ficheiro {
-    static int MAX=1024*1024*10;
+    static int MAX=1024*10;
     private String nome;
     private FileInputStream fis;
     private FileOutputStream fos ;// para o cliente que faz dowload;
