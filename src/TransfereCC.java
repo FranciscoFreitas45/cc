@@ -278,7 +278,7 @@ public class TransfereCC  extends Thread {
 
 
      byte[]getDados (byte[] pacote,int tamanho) {
-        byte[] dados = Arrays.copyOfRange(pacote, 12, tamanho);
+        byte[] dados = Arrays.copyOfRange(pacote, 20, tamanho);
         return dados;
     }
 

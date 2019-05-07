@@ -106,16 +106,15 @@ public class Transferencia {
 
 
     public void obtemDados(){
-
         List<byte[]> dados = ficheiro.getPacotes();
         if(dados.size()==0){
             this.completa=true;
             return ;
         }
-	this.pacotes.clear();
-	this.acks.clear();
+        this.pacotes.clear();
+        this.acks.clear();
         ultimoEnviado=-1;
-	ultimoConfirmado=-1;
+	    ultimoConfirmado=-1;
         int i=0;
         int tamanhoBytes=0;
         PacoteWRQ pWRQ = new PacoteWRQ(2,id,0,file);
@@ -136,7 +135,6 @@ public class Transferencia {
     }
 
     public void downORup(){
-
         if(this.tipo==2){
            this.ficheiro.inicia_leitura();
            obtemDados();
@@ -144,14 +142,11 @@ public class Transferencia {
         else{
             this.ficheiro.iniciaEscrita();
         }
-
-
-
     }
 
     public List<DatagramPacket> getPackets(){
-            int i =0,j=0;
-            int max_pacotes= this.cap_socket_recetor/(TAMANHO_PACOTE+4*CABECALHO);
+        int i =0,j=0;
+        int max_pacotes= this.cap_socket_recetor/(TAMANHO_PACOTE+3*CABECALHO+8);
         int max_janela = this.janela.getTamanho();
         if(ultimoConfirmado!=ultimoEnviado) {
             this.janela.timeOut();
@@ -175,22 +170,20 @@ public class Transferencia {
             }
         }
             // enviar novos
-
-
-            while(i<max_janela && ultimoEnviado<this.pacotes.size()){
-              Pacote p = pacotes.get(ultimoEnviado+1);
-              PacoteDados pd = (PacoteDados) p;
-                byte[] pacote = pd.gerarPacote();
-                DatagramPacket datapacket = new DatagramPacket(pacote, pacote.length,this.ip,this.portaDestino);
-                datagramPackets.add(datapacket);
-                ultimoEnviado++;
-                i++;
-                pacotes_enviados.add(j);
+        while(i<max_janela && ultimoEnviado<this.pacotes.size()){
+            Pacote p = pacotes.get(ultimoEnviado+1);
+            PacoteDados pd = (PacoteDados) p;
+            byte[] pacote = pd.gerarPacote();
+            DatagramPacket datapacket = new DatagramPacket(pacote, pacote.length,this.ip,this.portaDestino);
+            System.out.println("Foi enviado o pacote com id " + (ultimoEnviado+1));
+            datagramPackets.add(datapacket);
+            ultimoEnviado++;
+            i++;
+            pacotes_enviados.add(j);
         }
-            this.num_pacotes_enviados=datagramPackets.size();
-            this.rtt.start(pacotes_enviados);
-            return datagramPackets;
-
+        this.num_pacotes_enviados=datagramPackets.size();
+        this.rtt.start(pacotes_enviados);
+        return datagramPackets;
     }
 
 
@@ -225,7 +218,7 @@ public class Transferencia {
 
 
     public void setPacote(Pacote p,int numseq){
-            this.pacotes.put(numseq,p);
+        this.pacotes.put(numseq,p);
 
     }
 

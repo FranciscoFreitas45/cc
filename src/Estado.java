@@ -53,6 +53,7 @@ public class Estado {
         t.setPacote(p,numseq);
         lock.unlock();
     }
+
     public int setAck(int id,int numseq){
         int x;
         lock.lock();
@@ -60,17 +61,16 @@ public class Estado {
         t.setAck(numseq);
         if(t.isTodosAcks() && t.isCompleta()){
             x=1;
-System.out.println("ACABEI TRANSFERENCIA");
-}
+            System.out.println("ACABEI TRANSFERENCIA");
+        }
         else if(t.isTodosAcks()){
             x=2;
             t.obtemDados();
-	    System.out.println("TRANSMITI OS PACOTES TODOS");
+	        System.out.println("TRANSMITI OS PACOTES TODOS");
         }
         else x=3;
         lock.unlock();
         return x;
-
     }
 
     public void alterarconexao(int id,int tamanhojanela){

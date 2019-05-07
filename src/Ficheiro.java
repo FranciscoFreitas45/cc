@@ -67,11 +67,11 @@ public class Ficheiro {
     public void escreveFicheiro(Map<Integer,Pacote> pacotes){
 
         try {
-            for(Pacote p :pacotes.values()) {
+            for(Pacote p : pacotes.values()) {
                 PacoteDados pd =(PacoteDados)p;
                 byte  [] dados = pd.gerarPacote();
-                int tamanho=dados.length- Transferencia.CABECALHO*3;
-                    fos.write(dados, Transferencia.CABECALHO*3, tamanho);
+                int tamanho=dados.length- Transferencia.CABECALHO*3 - 8;
+                    fos.write(dados, Transferencia.CABECALHO*3+8, tamanho);
                    if(tamanho<Transferencia.TAMANHO_PACOTE) {
                        fos.close();
                        break;
