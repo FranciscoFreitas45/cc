@@ -78,7 +78,7 @@ public class TransfereCC  extends Thread {
                 byte[] dados = p.getData();
                 byte[] checksum;
                 int opcode = getOpcode(dados);
-                int id,numSeq,portaDestino,resposta;
+                int id,numSeq,portaDestino,resposta,chunk;
                 String file;
         InetAddress ip;
 
@@ -123,20 +123,21 @@ public class TransfereCC  extends Thread {
         }
         else if (opcode==3){// recebi dados
             checksum = getCheckSum(dados);
-            byte[] checksumBytes1 = Arrays.copyOfRange(dados, 0, 12);
-            byte[] checksumBytes2 = Arrays.copyOfRange(dados, 20, p.getLength());
+            byte[] checksumBytes1 = Arrays.copyOfRange(dados, 0, 16);
+            byte[] checksumBytes2 = Arrays.copyOfRange(dados, 24, p.getLength());
             CRC32 check = new CRC32();
             check.update(checksumBytes1);
             check.update(checksumBytes2);
             byte[] resultChecksum = ByteBuffer.allocate(8).putLong(check.getValue()).array();
             if(Arrays.equals(resultChecksum,checksum)){
                 id = getIdTrans(dados);
+		chunk= getChunk(dados);
                 numSeq= getNumSeq(dados);
                 byte[] x = getDados(dados,p.getLength());
-                PacoteDados pd = new PacoteDados(3,id,numSeq,x);
+                PacoteDados pd = new PacoteDados(3,id,numSeq,chunk,x);
                 System.out.println("numSeq"+numSeq);
                 estado.setPacote(pd,id,numSeq);
-                PacoteAck ack = new PacoteAck(4,id,numSeq,0);
+                PacoteAck ack = new PacoteAck(4,id,numSeq,chunk);
                 byte [] ackdados = ack.gerarPacote();
                     this.envia.add(new DatagramPacket(ackdados,ackdados.length,p.getAddress(),p.getPort()));
             }
@@ -146,8 +147,9 @@ public class TransfereCC  extends Thread {
         else if (opcode==4){// recebi um ack
             id = getIdTrans(dados);
             numSeq= getNumSeq(dados);
+	chunk= getChunk(dados);
             System.out.println("recebi ack com "+numSeq);
-            int x=estado.setAck(id,numSeq);// se devolver 1 ja recebeu os ack todos,2 se recebeu todos os ack do chunk, 3 se nao recebeu os ack todos do chunk ainda
+            int x=estado.setAck(id,numSeq,chunk);// se devolver 1 ja recebeu os ack todos,2 se recebeu todos os ack do chunk, 3 se nao recebeu os ack todos do chunk ainda
             if(x==1 || x==2){
                 PacoteAck ack = new PacoteAck(6,id,numSeq,0);
                 byte [] ackdados = ack.gerarPacote();
@@ -246,7 +248,7 @@ public class TransfereCC  extends Thread {
     }
 
     byte[] getCheckSum(byte[] pacote) {
-        byte[] checksum = Arrays.copyOfRange(pacote, 12, 20);
+        byte[] checksum = Arrays.copyOfRange(pacote, 16, 24);
         return checksum;
     }
 
@@ -276,9 +278,14 @@ public class TransfereCC  extends Thread {
     }
 
 
+     int getChunk (byte[] pacote) {
+        byte[] dados = Arrays.copyOfRange(pacote, 12, 16);
+      return ByteBuffer.wrap(dados).getInt();
+    }
+
 
      byte[]getDados (byte[] pacote,int tamanho) {
-        byte[] dados = Arrays.copyOfRange(pacote, 20, tamanho);
+        byte[] dados = Arrays.copyOfRange(pacote, 24, tamanho);
         return dados;
     }
 

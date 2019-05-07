@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 public class PacoteAck extends Pacote {
     private int numSeq;
     private int rcvWindow;
+    private int chunk;	
 
     public PacoteAck(int opcode, int id, int numSeq,int rcvWindow){
         super(opcode,id);
@@ -17,6 +18,7 @@ public class PacoteAck extends Pacote {
         byte[] idtrans = ByteBuffer.allocate(Transferencia.CABECALHO).putInt(this.idTrans).array();
         byte[] block = ByteBuffer.allocate(Transferencia.CABECALHO).putInt(this.numSeq).array();
         byte[] window = ByteBuffer.allocate(Transferencia.CABECALHO).putInt(this.rcvWindow).array();
+
         ByteBuffer bufferPacote = ByteBuffer.allocate(Transferencia.CABECALHO*4);
         bufferPacote.put(code);
         bufferPacote.put(idtrans);

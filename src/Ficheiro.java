@@ -2,7 +2,7 @@ import java.io.*;
 import java.util.*;
 
 public class Ficheiro {
-    static int MAX=1024*10;
+    static int MAX=1024*1024*10;
     private String nome;
     private FileInputStream fis;
     private FileOutputStream fos ;// para o cliente que faz dowload;
@@ -67,11 +67,12 @@ public class Ficheiro {
     public void escreveFicheiro(Map<Integer,Pacote> pacotes){
 
         try {
-            for(Pacote p : pacotes.values()) {
+            for(int i=0;i<pacotes.size();i++) {
+		Pacote p =pacotes.get(i);
                 PacoteDados pd =(PacoteDados)p;
                 byte  [] dados = pd.gerarPacote();
-                int tamanho=dados.length- Transferencia.CABECALHO*3 - 8;
-                    fos.write(dados, Transferencia.CABECALHO*3+8, tamanho);
+                int tamanho=dados.length- Transferencia.CABECALHO*4 - 8;
+                    fos.write(dados, Transferencia.CABECALHO*4+8, tamanho);
                    if(tamanho<Transferencia.TAMANHO_PACOTE) {
                        fos.close();
                        break;

@@ -54,10 +54,12 @@ public class Estado {
         lock.unlock();
     }
 
-    public int setAck(int id,int numseq){
+    public int setAck(int id,int numseq,int chunk){
         int x;
         lock.lock();
         Transferencia t = transferencias.get(id);
+	int check= t.getChunk();
+	if(check==chunk){
         t.setAck(numseq);
         if(t.isTodosAcks() && t.isCompleta()){
             x=1;
@@ -69,7 +71,10 @@ public class Estado {
 	        System.out.println("TRANSMITI OS PACOTES TODOS");
         }
         else x=3;
-        lock.unlock();
+}
+else {x=3;
+System.out.println("CHUNK JA PASSOU");
+}        lock.unlock();
         return x;
     }
 
