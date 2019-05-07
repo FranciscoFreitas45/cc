@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.zip.CRC32;
 
 import static java.lang.Integer.parseInt;
 
@@ -75,7 +76,7 @@ public class TransfereCC  extends Thread {
 
     public void analisa(DatagramPacket p){
                 byte[] dados = p.getData();
-
+                byte[] checksum;
                 int opcode = getOpcode(dados);
                 int id,numSeq,portaDestino,resposta;
                 String file;
@@ -121,16 +122,25 @@ public class TransfereCC  extends Thread {
 
         }
         else if (opcode==3){// recebi dados
-            id = getIdTrans(dados);
-            numSeq= getNumSeq(dados);
-            byte[] x = getDados(dados,p.getLength());
-            PacoteDados pd = new PacoteDados(3,id,numSeq,x);
-            System.out.println("numSeq"+numSeq);
-            estado.setPacote(pd,id,numSeq);
-            PacoteAck ack = new PacoteAck(4,id,numSeq,0);
-            byte [] ackdados = ack.gerarPacote();
-                this.envia.add(new DatagramPacket(ackdados,ackdados.length,p.getAddress(),p.getPort()));
-
+            checksum = getCheckSum(dados);
+            byte[] checksumBytes1 = Arrays.copyOfRange(dados, 0, 12);
+            byte[] checksumBytes2 = Arrays.copyOfRange(dados, 20, p.getLength());
+            CRC32 check = new CRC32();
+            check.update(checksumBytes1);
+            check.update(checksumBytes2);
+            byte[] resultChecksum = ByteBuffer.allocate(8).putLong(check.getValue()).array();
+            if(Arrays.equals(resultChecksum,checksum)){
+                id = getIdTrans(dados);
+                numSeq= getNumSeq(dados);
+                byte[] x = getDados(dados,p.getLength());
+                PacoteDados pd = new PacoteDados(3,id,numSeq,x);
+                System.out.println("numSeq"+numSeq);
+                estado.setPacote(pd,id,numSeq);
+                PacoteAck ack = new PacoteAck(4,id,numSeq,0);
+                byte [] ackdados = ack.gerarPacote();
+                    this.envia.add(new DatagramPacket(ackdados,ackdados.length,p.getAddress(),p.getPort()));
+            }
+            else System.out.println("Ups tive erro de checksuuuuum");
         }
 
         else if (opcode==4){// recebi um ack
@@ -233,6 +243,11 @@ public class TransfereCC  extends Thread {
         }
 
 
+    }
+
+    byte[] getCheckSum(byte[] pacote) {
+        byte[] checksum = Arrays.copyOfRange(pacote, 12, 20);
+        return checksum;
     }
 
     int getOpcode(byte[] pacote) {
