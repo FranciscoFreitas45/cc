@@ -171,6 +171,9 @@ public class TransfereCC  extends Thread {
             System.out.println("recebi um 6 E O id É "+id);
             Transferencia t =estado.getTransferencia(id);
             t.escreveFicheiro();
+            if(t.isCompleta()){
+                estado.apagaTransferencia(id);
+            }
 
         }
 
@@ -194,6 +197,7 @@ public class TransfereCC  extends Thread {
     public void vePedidos(){
         List<Transferencia> pedidos = this.conexoes.getTransferencias();
         for(Transferencia t : pedidos){
+            System.out.println("NOVA TRANSFERENCIA");
             estado.addTransferencia(t);
         }
     }

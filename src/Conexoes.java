@@ -18,6 +18,7 @@ import java.util.concurrent.locks.*;
         public void addOrdens(Point p ) {
             this.lock.lock();
             this.ordens.add(p);
+            System.out.println("Aceitei ordem ");
             this.lock.unlock();
         }
 
@@ -25,6 +26,8 @@ import java.util.concurrent.locks.*;
             this.lock.lock();
             System.out.println("INSERI CRL ");
             this.pedidos.add(t);
+            System.out.println("INSERI CRL " + this.pedidos.size());
+            this.pedidos.size();
             this.lock.unlock();
         }
 
@@ -33,35 +36,33 @@ import java.util.concurrent.locks.*;
 
         public boolean isEmpty(){
             boolean x;
-            this.lock.lock();
             x =this.ordens.isEmpty();
-            this.lock.unlock();
             return x;
         }
 
         public boolean isPedidos(){
             boolean x;
-            this.lock.lock();
             x =this.pedidos.isEmpty();
-            this.lock.unlock();
             return x;
         }
 
-        List<Point> getOrdens() {
+       public List<Point> getOrdens() {
             List<Point> aux = new ArrayList<>();
             this.lock.lock();
-                while (!isEmpty()){
+                while (this.ordens.size()!=0){
                     aux.add(ordens.poll());
+                    System.out.println("GETORDENS ");
                 }
                 this.lock.unlock();
                 return aux;
             }
 
-        List<Transferencia> getTransferencias() {
+     public  List<Transferencia> getTransferencias() {
             List<Transferencia> aux = new ArrayList<>();
             this.lock.lock();
-            while (!isPedidos()){
-                aux.add(pedidos.poll());
+            while (this.pedidos.size()!=0){
+                System.out.println("GETransferincas ");
+                aux.add(pedidos.remove());
             }
             this.lock.unlock();
             return aux;

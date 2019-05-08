@@ -58,23 +58,29 @@ public class Estado {
         int x;
         lock.lock();
         Transferencia t = transferencias.get(id);
-	int check= t.getChunk();
-	if(check==chunk){
-        t.setAck(numseq);
-        if(t.isTodosAcks() && t.isCompleta()){
-            x=1;
-            System.out.println("ACABEI TRANSFERENCIA");
-        }
-        else if(t.isTodosAcks()){
-            x=2;
-            t.obtemDados();
-	        System.out.println("TRANSMITI OS PACOTES TODOS");
-        }
-        else x=3;
-}
-else {x=3;
+        if(t!=null) {
+            int check = t.getChunk();
+            if (check == chunk) {
+                t.setAck(numseq);
+                if (t.isTodosAcks() && t.isCompleta()) {
+                    x = 1;
+                    System.out.println("ACABEI TRANSFERENCIA");
+                    apagaTransferencia(id);
+                } else if (t.isTodosAcks()) {
+                    x = 2;
+                    t.obtemDados();
+                    System.out.println("TRANSMITI OS PACOTES TODOS");
+                } else x = 3;
+            } else {
+                x = 3;
 System.out.println("CHUNK JA PASSOU");
-}        lock.unlock();
+            }
+        }
+else{
+    x=3;
+
+            }
+     lock.unlock();
         return x;
     }
 
@@ -110,5 +116,10 @@ System.out.println("CHUNK JA PASSOU");
             }
         }
         lock.unlock();
+    }
+
+
+    public void apagaTransferencia (int id){
+        this.transferencias.remove(id);
     }
 }

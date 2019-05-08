@@ -310,5 +310,6 @@ public void todosConfirmadosAte(){
         this.ficheiro.escreveFicheiro(this.pacotes);
         this.pacotes.clear();
         this.acks.clear();
+
     }
 }
