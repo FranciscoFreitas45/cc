@@ -18,15 +18,12 @@ import java.util.concurrent.locks.*;
         public void addOrdens(Point p ) {
             this.lock.lock();
             this.ordens.add(p);
-            System.out.println("Aceitei ordem ");
             this.lock.unlock();
         }
 
         public void addTransferencias(Transferencia t ) {
             this.lock.lock();
-            System.out.println("INSERI CRL ");
             this.pedidos.add(t);
-            System.out.println("INSERI CRL " + this.pedidos.size());
             this.pedidos.size();
             this.lock.unlock();
         }
@@ -51,7 +48,6 @@ import java.util.concurrent.locks.*;
             this.lock.lock();
                 while (this.ordens.size()!=0){
                     aux.add(ordens.poll());
-                    System.out.println("GETORDENS ");
                 }
                 this.lock.unlock();
                 return aux;
@@ -61,7 +57,6 @@ import java.util.concurrent.locks.*;
             List<Transferencia> aux = new ArrayList<>();
             this.lock.lock();
             while (this.pedidos.size()!=0){
-                System.out.println("GETransferincas ");
                 aux.add(pedidos.remove());
             }
             this.lock.unlock();

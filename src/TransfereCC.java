@@ -91,7 +91,6 @@ public class TransfereCC  extends Thread {
             ip = p.getAddress();
             portaDestino = p.getPort();
             file = getFile(dados,p.getLength());
-            System.out.println(file);
 
             Transferencia t = new Transferencia(2, id, ip, portaDestino, file,false);
             t.setCap_socket_recetor(numSeq);
@@ -108,14 +107,10 @@ public class TransfereCC  extends Thread {
 
             id = getIdTrans(dados);
             ip = p.getAddress();
-            System.out.println(ip);
             portaDestino=p.getPort();
             file=getFile(dados,p.getLength());
             String[] parts = file.split("/");
             String ficheiro = parts[parts.length-1];
-            System.out.println(file);
-            System.out.println(ficheiro);
-
                 Transferencia t = new Transferencia(1,id,ip,portaDestino,ficheiro,false);
                 estado.addTransferencia(t);
 
@@ -135,20 +130,17 @@ public class TransfereCC  extends Thread {
                 numSeq= getNumSeq(dados);
                 byte[] x = getDados(dados,p.getLength());
                 PacoteDados pd = new PacoteDados(3,id,numSeq,chunk,x);
-                System.out.println("numSeq"+numSeq);
                 estado.setPacote(pd,id,numSeq);
                 PacoteAck ack = new PacoteAck(4,id,numSeq,chunk);
                 byte [] ackdados = ack.gerarPacote();
                     this.envia.add(new DatagramPacket(ackdados,ackdados.length,p.getAddress(),p.getPort()));
             }
-            else System.out.println("Ups tive erro de checksuuuuum");
         }
 
         else if (opcode==4){// recebi um ack
             id = getIdTrans(dados);
             numSeq= getNumSeq(dados);
 	chunk= getChunk(dados);
-            System.out.println("recebi ack com "+numSeq);
             int x=estado.setAck(id,numSeq,chunk);// se devolver 1 ja recebeu os ack todos,2 se recebeu todos os ack do chunk, 3 se nao recebeu os ack todos do chunk ainda
             if(x==1 || x==2){
                 PacoteAck ack = new PacoteAck(6,id,numSeq,0);
@@ -160,7 +152,6 @@ public class TransfereCC  extends Thread {
 
         else if (opcode ==5){// resposta a pedido de conexão
             id = getIdTrans(dados);
-            System.out.println("recebi um 5 E O id É "+id);
             int r = getNumSeq(dados);
             int janela=getTamJanela(dados);
                     if(r==1)// aceitou
@@ -168,7 +159,6 @@ public class TransfereCC  extends Thread {
         }
         else if (opcode==6){// pacote final
             id = getIdTrans(dados);
-            System.out.println("recebi um 6 E O id É "+id);
             Transferencia t =estado.getTransferencia(id);
             t.escreveFicheiro();
             if(t.isCompleta()){
@@ -197,7 +187,6 @@ public class TransfereCC  extends Thread {
     public void vePedidos(){
         List<Transferencia> pedidos = this.conexoes.getTransferencias();
         for(Transferencia t : pedidos){
-            System.out.println("NOVA TRANSFERENCIA");
             estado.addTransferencia(t);
         }
     }
@@ -232,15 +221,9 @@ public class TransfereCC  extends Thread {
                                 DatagramPacket d = t.getConexao();
                                     if(d!=null){
                                         this.envia.add(d);
-                                        System.out.println("eeee");
                                     }
-                                  // else System.out.println("null");
                                 }
                        }
-                //System.out.println("Phase 1");
-                // interpret_received_packet();
-
-                //System.out.println("Phase 2");
             }
 
         } catch (SocketException e) {

@@ -103,7 +103,6 @@ this.chunk=-1;
     public void setCap_socket_recetor(int cap_socket_recetor) {
         this.cap_socket_recetor = cap_socket_recetor;
         PacoteWRQ pWRQ = new PacoteWRQ(this.tipo,id,0,file);
-        // System.out.println(file);
         byte []cone = pWRQ.gerarPacote();
         this.conexao = new DatagramPacket(cone, cone.length,this.ip,this.portaDestino);
 
@@ -124,7 +123,6 @@ chunk++;
         int i=0;
         int tamanhoBytes=0;
         PacoteWRQ pWRQ = new PacoteWRQ(2,id,0,file);
-        System.out.println("o titulo é "+file);
         byte []cone = pWRQ.gerarPacote();
         this.conexao = new DatagramPacket(cone, cone.length,this.ip,this.portaDestino);
         for(byte[] d : dados) {
@@ -135,7 +133,6 @@ chunk++;
             i++;
         }
         if(tamanhoBytes!=Ficheiro.MAX) {
-            System.out.println("li  "+tamanhoBytes+ " bytes " );
             this.completa = true;
         }
     }
@@ -164,7 +161,6 @@ chunk++;
         for(j=ultimoConfirmado+1;j<this.ultimoEnviado+1;j++) {
             if (i < max_janela) {
                 if (!this.acks.get(j)) {// caso ainda nao tenha o ack, tem que retransmitir o pacote pois nao recebeu o ack de confirmação
-                        System.out.println("restranmiti o pacote " + j);
                         Pacote p = pacotes.get(j);
                         PacoteDados pd = (PacoteDados) p;
                         byte[] pacote = pd.gerarPacote();
@@ -182,7 +178,6 @@ chunk++;
                 PacoteDados pd = (PacoteDados) p;
                 byte[] pacote = pd.gerarPacote();
                 DatagramPacket datapacket = new DatagramPacket(pacote, pacote.length, this.ip, this.portaDestino);
-                System.out.println("Foi enviado o pacote com id " + (ultimoEnviado + 1));
                 datagramPackets.add(datapacket);
                 ultimoEnviado++;
                 i++;
@@ -239,7 +234,6 @@ chunk++;
             num_pacotes_enviados--;
          boolean x=this.acks.get(numseq);
          if(x) {
-             System.out.println("ACK DUPLICADO do pacote " + numseq);
              janela.ackDuplicado();
          }
          else

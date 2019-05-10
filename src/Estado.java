@@ -20,7 +20,7 @@ public class Estado {
         else x= t.getId();// caso em que o id vem de fora
         t.setId(x);
         this.transferencias.put(x,t);
-        System.out.println(this.transferencias.toString());
+        //System.out.println(this.transferencias.toString());
         this.lock.unlock();
     }
 
@@ -64,16 +64,13 @@ public class Estado {
                 t.setAck(numseq);
                 if (t.isTodosAcks() && t.isCompleta()) {
                     x = 1;
-                    System.out.println("ACABEI TRANSFERENCIA");
                     apagaTransferencia(id);
                 } else if (t.isTodosAcks()) {
                     x = 2;
                     t.obtemDados();
-                    System.out.println("TRANSMITI OS PACOTES TODOS");
                 } else x = 3;
             } else {
                 x = 3;
-System.out.println("CHUNK JA PASSOU");
             }
         }
 else{

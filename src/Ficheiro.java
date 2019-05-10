@@ -29,7 +29,6 @@ public class Ficheiro {
                 tamanhoAcc+=dataBytes.length;
                 if (tamanho < Transferencia.TAMANHO_PACOTE) {
                         fis.close();
-                        System.out.println("li "+tamanhoAcc + " de bytes na classe ficheiro");
                         return pacotes;
                 }
             }

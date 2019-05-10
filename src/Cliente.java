@@ -26,7 +26,7 @@ public class Cliente {
                 System.out.println("1-Download");
                 System.out.println("2-Upload");
                 System.out.println("3-Aceitar conexao -- Id de transferencia");
-                System.out.println("4-Rejeitar conexão --Id de tarnsferencia");
+                System.out.println("4-Rejeitar conexão -- Id de transferencia");
                 System.out.println("0-Sair");
 
 
